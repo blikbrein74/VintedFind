@@ -1,0 +1,12 @@
+# Your searches, seen items and ntfy topic: never commit
+data/
+
+# Personal notes and local tooling
+CLAUDE.md
+.claude/
+Synology update/
+
+__pycache__/
+*.pyc
+*.zip
+.DS_Store

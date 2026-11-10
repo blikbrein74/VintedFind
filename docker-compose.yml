@@ -1,0 +1,22 @@
+# VintedFind on a Synology (Container Manager → Project) or any Docker host.
+# Put this file next to server.py and static/, then: docker compose up -d
+services:
+  vintedfind:
+    image: python:3.12-alpine
+    container_name: vintedfind
+    restart: unless-stopped
+    working_dir: /app
+    command: ["python", "-u", "server.py", "--lan"]
+    environment:
+      - TZ=Europe/Amsterdam        # your time zone, for log timestamps
+      # - VINTEDFIND_SITE=vinted.fr  # another Vinted country site (default vinted.nl)
+      - VINTEDFIND_DATA=/app/data
+    volumes:
+      - ./:/app
+    ports:
+      - "8765:8765"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/api/state', timeout=5)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3

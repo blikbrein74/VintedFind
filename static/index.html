@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b7a75">
+<meta name="referrer" content="no-referrer"><!-- Vinted's image CDN rejects foreign referrers -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>VintedFind</title>
+<style>
+:root {
+  --bg: #f6f7f7; --card: #ffffff; --ink: #16201f; --muted: #66706f; --line: #e3e7e6;
+  --accent: #0b7a75; --accent-ink: #ffffff; --soft: #e5f3f2; --warn: #b4441f; --new: #f2b705;
+  --radius: 14px; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1413; --card: #182020; --ink: #e8eeed; --muted: #95a19f; --line: #26302f;
+    --accent: #2bb3aa; --accent-ink: #062120; --soft: #16302e; --warn: #ff8a65; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.bar { max-width: 1180px; margin: 0 auto; padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+.logo { font-weight: 750; font-size: 18px; letter-spacing: -.2px; display: flex; align-items: center; gap: 8px; }
+.logo i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.logo i.live { animation: pulse 2s infinite; }
+@keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 60%,transparent)} 70%{box-shadow:0 0 0 8px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+nav { margin-left: auto; display: flex; gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+nav button { border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
+nav button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+main { max-width: 1180px; margin: 0 auto; padding: 16px; }
+h2 { font-size: 15px; margin: 22px 0 10px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.pad { padding: 16px; }
+.hidden { display: none !important; }
+input, select { width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+.btn { border: 0; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+.btn.small { padding: 6px 10px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+.row > .grow { flex: 1 1 240px; }
+.hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.hint code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; background: var(--soft); padding: 1px 5px; border-radius: 5px; word-break: break-all; }
+.err { color: var(--warn); font-size: 13px; margin-top: 8px; }
+
+/* feed */
+.feedhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.feedhead h2 { margin-right: auto; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 5px 11px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer; }
+.chip.on { background: var(--soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+@media (max-width: 480px) { .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; } }
+.item { display: block; text-decoration: none; color: inherit; overflow: hidden; position: relative; transition: transform .12s; }
+.item:hover { transform: translateY(-2px); }
+.item .ph { aspect-ratio: 310/430; background: var(--soft) center/cover no-repeat; }
+.item .meta { padding: 9px 10px 11px; }
+.item .price { font-weight: 700; font-size: 16px; }
+.item .total { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 4px; }
+.item .t { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .d { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .foot { display: flex; justify-content: space-between; gap: 6px; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.item .tag { background: var(--soft); color: var(--accent); padding: 1px 7px; border-radius: 999px; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .fresh { position: absolute; top: 8px; left: 8px; background: var(--new); color: #241b00; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+.empty { text-align: center; color: var(--muted); padding: 48px 16px; }
+.empty b { color: var(--ink); display: block; font-size: 17px; margin-bottom: 6px; }
+
+/* searches */
+.slist { display: grid; gap: 10px; }
+.s { display: flex; gap: 12px; align-items: center; padding: 12px 14px; flex-wrap: wrap; }
+.s .info { flex: 1 1 260px; min-width: 0; }
+.s .name { font-weight: 650; }
+.s .url { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.s .stat { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.s .stat .bad { color: var(--warn); }
+.s .acts { display: flex; gap: 6px; }
+.s.off { opacity: .55; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+.s.off .dot { background: var(--muted); }
+.s.error .dot { background: var(--warn); }
+
+/* search form */
+.field { margin-bottom: 16px; }
+.picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.picks:not(:empty) { margin-bottom: 8px; }
+.pick { display: inline-flex; align-items: center; gap: 6px; background: var(--soft); color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 6px 4px 11px; font-size: 13px; font-weight: 600; }
+.pick button { border: 0; background: transparent; color: inherit; font-size: 15px; line-height: 1; cursor: pointer; padding: 0 3px; }
+.ta { position: relative; }
+.taList { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 10; max-height: 280px; overflow: auto; padding: 4px; }
+.taList button { display: block; width: 100%; text-align: left; border: 0; background: transparent; color: var(--ink); font: inherit; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.taList button:hover, .taList button.hl { background: var(--soft); }
+.taList .none { padding: 9px 10px; color: var(--muted); font-size: 14px; }
+.cats { display: flex; flex-wrap: wrap; gap: 8px; }
+.cats select { flex: 1 1 160px; width: auto; }
+.sgroup { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+.sgroup summary { cursor: pointer; padding: 9px 12px; font-size: 14px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; }
+.sgroup summary::-webkit-details-marker { display: none; }
+.sgroup summary::after { content: "▾"; color: var(--muted); }
+.sgroup[open] summary::after { content: "▴"; }
+.sgroup summary .n { color: var(--accent); font-weight: 600; margin-left: auto; margin-right: 8px; }
+.sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; padding: 0 12px 12px; }
+.sizes .chip { text-align: center; padding: 7px 4px; }
+.chip .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+.s .filters { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.s .filters span { font-size: 12px; background: var(--soft); color: var(--ink); padding: 1px 8px; border-radius: 999px; }
+
+.steps { margin: 0; padding-left: 20px; }
+.steps li { margin: 4px 0; }
+.toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: var(--ink); margin: 0; }
+.toggle input { width: auto; }
+.settings { display: grid; gap: 16px; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px; z-index: 20; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="logo"><i id="liveDot"></i>VintedFind</div>
+    <nav>
+      <button data-tab="feed" class="on">Feed</button>
+      <button data-tab="searches">Searches</button>
+      <button data-tab="settings">Alerts</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- FEED -->
+  <section id="tab-feed">
+    <div class="feedhead">
+      <h2>New listings</h2>
+      <button class="btn ghost small" id="notifyBtn">Enable browser alerts</button>
+    </div>
+    <div class="chips" id="filters" style="margin-bottom:12px"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty card hidden" id="feedEmpty"></div>
+  </section>
+
+  <!-- SEARCHES -->
+  <section id="tab-searches" class="hidden">
+    <h2 id="formTitle">New search</h2>
+    <div class="card pad">
+      <form id="addForm" autocomplete="off">
+        <div class="field">
+          <label for="brandInput">Brand</label>
+          <div class="picks" id="brandPicks"></div>
+          <div class="ta">
+            <input id="brandInput" placeholder="Type a brand, e.g. Arc'teryx, Stone Island">
+            <div class="taList card hidden" id="brandList"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <div class="cats" id="catSelects"><span class="hint">Loading categories…</span></div>
+        </div>
+        <div class="field">
+          <label>Size <span id="sizeCount"></span></label>
+          <div id="sizeBox"><p class="hint" style="margin:0">Pick a category first (e.g. Men → Shoes) to see its sizes.</p></div>
+        </div>
+        <div class="field">
+          <label>Condition</label>
+          <div class="chips" id="condBox"></div>
+        </div>
+        <div class="field">
+          <label>Colour</label>
+          <div class="chips" id="colorBox"></div>
+        </div>
+        <div class="row field">
+          <div style="flex:1 1 110px"><label for="pFrom">Min price (€)</label><input id="pFrom" inputmode="decimal" placeholder="0"></div>
+          <div style="flex:1 1 110px"><label for="pTo">Max price (€)</label><input id="pTo" inputmode="decimal" placeholder="any"></div>
+          <div class="grow"><label for="fText">Keyword (optional)</label><input id="fText" placeholder="e.g. beta jacket"></div>
+        </div>
+        <div class="field"><label for="fName">Name (optional)</label><input id="fName" placeholder="Filled in automatically from your filters"></div>
+        <div class="field hidden" id="urlBox">
+          <label for="fUrl">Vinted search link (replaces the filters above)</label>
+          <input id="fUrl" placeholder="https://www.vinted.nl/catalog?…">
+        </div>
+        <div class="row" style="align-items:center">
+          <button class="btn" id="addBtn">Watch</button>
+          <button type="button" class="btn ghost hidden" id="cancelEdit">Cancel</button>
+          <a href="#" class="hint" id="toggleUrl" style="margin:0 0 0 auto">Paste a link instead</a>
+        </div>
+        <div class="err hidden" id="addErr"></div>
+      </form>
+      <p class="hint">Results are always sorted newest first. The first check only learns what's already listed. After that, every new listing triggers an alert.</p>
+    </div>
+    <h2>Watching</h2>
+    <div class="slist" id="slist"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="hidden">
+    <h2>Phone alerts (ntfy)</h2>
+    <div class="card pad settings">
+      <ol class="steps">
+        <li>Install the free <b>ntfy</b> app (<a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank" rel="noopener">iPhone</a> / <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">Android</a>). No account needed.</li>
+        <li>In the app, tap <b>+</b> and subscribe to the topic <span class="mono" id="topicShow"></span></li>
+        <li>Switch alerts on below and send a test.</li>
+      </ol>
+      <label class="toggle"><input type="checkbox" id="sNtfy"> Send a push for every new listing</label>
+      <div class="row">
+        <div class="grow"><label for="sTopic">Topic (treat it like a password: anyone who knows it can read your alerts)</label><input id="sTopic"></div>
+        <button class="btn ghost" id="testBtn" type="button">Send test</button>
+      </div>
+      <details>
+        <summary class="hint" style="cursor:pointer">Advanced</summary>
+        <div style="margin-top:10px"><label for="sServer">ntfy server</label><input id="sServer"></div>
+      </details>
+    </div>
+    <h2>Checking</h2>
+    <div class="card pad settings">
+      <div class="row">
+        <div class="grow" style="max-width:220px"><label for="sInterval">Check each search every</label>
+          <select id="sInterval">
+            <option value="30">30 seconds</option><option value="45">45 seconds</option>
+            <option value="60">1 minute</option><option value="90">90 seconds</option>
+            <option value="120">2 minutes</option><option value="300">5 minutes</option>
+          </select></div>
+      </div>
+      <label class="toggle"><input type="checkbox" id="sPromo"> Ignore promoted (“bumped”) listings</label>
+      <p class="hint" style="margin:0">Faster isn't always better: very frequent checks can get your IP temporarily blocked by Vinted. 30–60 seconds is a good balance.</p>
+      <div><button class="btn ghost small" id="clearFeed" type="button">Clear feed</button></div>
+    </div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+let state = null, filter = 'all', knownIds = null, firstLoad = true;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function ago(ts, now) {
+  const s = Math.max(0, Math.round((now || Date.now()/1000) - ts));
+  if (s < 60) return s + 's ago';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+const cur = c => c === 'EUR' ? '€' : (c + ' ');
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+
+async function api(path, body) {
+  const r = await fetch(path, body === undefined ? {} : { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+// tabs
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+  ['feed','searches','settings'].forEach(t => $('#tab-'+t).classList.toggle('hidden', t !== b.dataset.tab));
+  try { localStorage.setItem('vf-tab', b.dataset.tab); } catch (e) {}
+});
+try { const t = localStorage.getItem('vf-tab'); if (t) document.querySelector(`nav button[data-tab="${t}"]`)?.click(); } catch (e) {}
+
+function renderFeed() {
+  const { feed, searches, now } = state;
+  const chips = [['all', 'All']].concat(searches.map(s => [s.id, s.name]));
+  $('#filters').innerHTML = searches.length > 1 ? chips.map(([id, n]) =>
+    `<button class="chip ${filter === id ? 'on' : ''}" data-f="${id}">${esc(n)}</button>`).join('') : '';
+  $('#filters').querySelectorAll('.chip').forEach(c => c.onclick = () => { filter = c.dataset.f; renderFeed(); });
+
+  const list = feed.filter(f => filter === 'all' || f.search_id === filter);
+  $('#grid').innerHTML = list.map(f => `
+    <a class="card item" href="${esc(f.url)}" target="_blank" rel="noopener">
+      ${now - f.found_at < 300 ? '<span class="fresh">NEW</span>' : ''}
+      <div class="ph" style="background-image:url('${esc(f.photo)}')"></div>
+      <div class="meta">
+        <div class="price">${cur(f.currency)}${esc(f.price)}${f.total ? `<span class="total">${cur(f.currency)}${esc(f.total)} incl.</span>` : ''}</div>
+        <div class="t">${esc(f.brand || f.title)}</div>
+        <div class="d">${esc(f.details || f.title)}</div>
+        <div class="foot"><span class="tag">${esc(f.search_name)}</span><span>${ago(f.found_at, now)}</span></div>
+      </div>
+    </a>`).join('');
+
+  const empty = $('#feedEmpty');
+  empty.classList.toggle('hidden', list.length > 0);
+  if (!searches.length) empty.innerHTML = '<b>No searches yet</b>Go to <a href="#" onclick="document.querySelector(\'[data-tab=searches]\').click();return false">Searches</a> and paste a Vinted search link.';
+  else if (!list.length) empty.innerHTML = '<b>Watching…</b>New listings appear here the moment they’re found.';
+}
+
+function renderSearches() {
+  const { searches, now } = state;
+  $('#slist').innerHTML = searches.length ? searches.map(s => {
+    const status = s.last_error ? `<span class="bad">⚠ ${esc(s.last_error)}</span>`
+      : !s.last_check ? 'Waiting for first check…'
+      : `Checked ${ago(s.last_check, now)} · ${s.last_count ?? 0} on page · ${s.hits || 0} new found`;
+    return `<div class="card s ${s.enabled === false ? 'off' : ''} ${s.last_error ? 'error' : ''}">
+      <span class="dot"></span>
+      <div class="info">
+        <div class="name">${esc(s.name)}</div>
+        ${s.filters ? `<div class="filters">${filterSummary(s.filters).map(t => `<span>${esc(t)}</span>`).join('')}</div>`
+          : `<div class="url">${esc(decodeURIComponent(s.url).replace(/^https:\/\/www\./, ''))}</div>`}
+        <div class="stat">${s.enabled === false ? 'Paused' : status} · <a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:inherit">open on Vinted</a></div>
+      </div>
+      <div class="acts">
+        <button class="btn ghost small" data-a="edit" data-id="${s.id}">Edit</button>
+        <button class="btn ghost small" data-a="check" data-id="${s.id}">Check now</button>
+        <button class="btn ghost small" data-a="toggle" data-id="${s.id}">${s.enabled === false ? 'Resume' : 'Pause'}</button>
+        <button class="btn ghost small" data-a="delete" data-id="${s.id}" aria-label="Delete">✕</button>
+      </div></div>`;
+  }).join('') : '<div class="empty card"><b>Nothing watched yet</b>Add your first search above.</div>';
+  $('#slist').querySelectorAll('button[data-a]').forEach(b => b.onclick = async () => {
+    if (b.dataset.a === 'edit') return startEdit(state.searches.find(s => s.id === b.dataset.id));
+    if (b.dataset.a === 'delete' && !confirm('Stop watching this search?')) return;
+    await api(`/api/searches/${b.dataset.id}/${b.dataset.a}`, {});
+    if (b.dataset.a === 'check') toast('Checking…');
+    refresh();
+  });
+}
+
+let settingsFilled = false;
+function renderSettings() {
+  const s = state.settings;
+  $('#topicShow').textContent = s.ntfy_topic;
+  if (settingsFilled) return;
+  settingsFilled = true;
+  $('#sNtfy').checked = s.ntfy_enabled;
+  $('#sTopic').value = s.ntfy_topic;
+  $('#sServer').value = s.ntfy_server;
+  $('#sInterval').value = String(s.interval);
+  $('#sPromo').checked = s.skip_promoted;
+}
+const saveSettings = async patch => { await api('/api/settings', patch); toast('Saved'); refresh(); };
+$('#sNtfy').onchange = e => saveSettings({ ntfy_enabled: e.target.checked });
+$('#sTopic').onchange = e => saveSettings({ ntfy_topic: e.target.value });
+$('#sServer').onchange = e => saveSettings({ ntfy_server: e.target.value });
+$('#sInterval').onchange = e => saveSettings({ interval: +e.target.value });
+$('#sPromo').onchange = e => saveSettings({ skip_promoted: e.target.checked });
+$('#testBtn').onclick = async () => {
+  try { await api('/api/test-notification', {}); toast('Test sent. Check your phone.'); }
+  catch (e) { toast('Failed: ' + e.message); }
+};
+$('#clearFeed').onclick = async () => { if (confirm('Clear all listings from the feed?')) { await api('/api/feed/clear', {}); refresh(); } };
+
+// ---------------------------------------------------------------- search form
+const form = { brands: [], catPath: [], sizes: [], conditions: [], colors: [], editing: null };
+let catTree = [], sizeGroups = [];
+
+function filterSummary(f) {
+  const out = [];
+  if (f.brands?.length) out.push(f.brands.map(b => b.title).join(', '));
+  if (f.category) out.push(f.category.path || f.category.title);
+  if (f.sizes?.length) out.push('Size ' + f.sizes.map(s => s.title).join(', '));
+  if (f.conditions?.length) out.push(f.conditions.map(c => c.title).join(', '));
+  if (f.colors?.length) out.push(f.colors.map(c => c.title).join(', '));
+  if (f.price_from && f.price_to) out.push(`€${f.price_from} – €${f.price_to}`);
+  else if (f.price_to) out.push(`≤ €${f.price_to}`);
+  else if (f.price_from) out.push(`≥ €${f.price_from}`);
+  if (f.text) out.push('“' + f.text + '”');
+  return out;
+}
+
+const catNode = path => { let nodes = catTree, node = null; for (const id of path) { node = nodes.find(n => n.id == id); if (!node) break; nodes = node.children; } return node; };
+function findCatPath(id, nodes = catTree, trail = []) {
+  for (const n of nodes) {
+    if (n.id == id) return trail.concat(n.id);
+    const p = findCatPath(id, n.children, trail.concat(n.id));
+    if (p) return p;
+  }
+  return null;
+}
+
+function renderPicks() {
+  $('#brandPicks').innerHTML = form.brands.map((b, i) => `<span class="pick">${esc(b.title)}<button type="button" data-i="${i}" aria-label="Remove">×</button></span>`).join('');
+  $('#brandPicks').querySelectorAll('button').forEach(x => x.onclick = () => { form.brands.splice(+x.dataset.i, 1); renderPicks(); });
+}
+
+function renderCats() {
+  const box = $('#catSelects'); box.innerHTML = '';
+  let nodes = catTree;
+  for (let level = 0; nodes && nodes.length; level++) {
+    const sel = document.createElement('select');
+    const parent = level ? catNode(form.catPath.slice(0, level)) : null;
+    sel.innerHTML = `<option value="">${level ? 'All of ' + esc(parent.title) : 'Any category'}</option>` +
+      nodes.map(n => `<option value="${n.id}" ${form.catPath[level] == n.id ? 'selected' : ''}>${esc(n.title)}</option>`).join('');
+    sel.onchange = () => {
+      form.catPath = form.catPath.slice(0, level);
+      if (sel.value) form.catPath.push(+sel.value);
+      renderCats(); loadSizes();
+    };
+    box.appendChild(sel);
+    const chosen = form.catPath[level] && nodes.find(n => n.id == form.catPath[level]);
+    if (!chosen) break;
+    nodes = chosen.children;
+  }
+}
+
+async function loadSizes() {
+  const node = catNode(form.catPath);
+  const box = $('#sizeBox');
+  if (!node) { sizeGroups = []; box.innerHTML = '<p class="hint" style="margin:0">Pick a category first (e.g. Men → Shoes) to see its sizes.</p>'; renderSizeCount(); return; }
+  box.innerHTML = '<p class="hint" style="margin:0">Loading sizes…</p>';
+  try { sizeGroups = await api('/api/lookup/sizes?catalog=' + node.id); }
+  catch (e) { box.innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  const valid = new Set(sizeGroups.flatMap(g => g.options.map(o => o.id)));
+  form.sizes = form.sizes.filter(s => valid.has(s.id));
+  renderSizes();
+}
+
+function renderSizeCount() { $('#sizeCount').textContent = form.sizes.length ? `· ${form.sizes.length} selected` : ''; }
+function renderSizes() {
+  const box = $('#sizeBox');
+  if (!sizeGroups.length) { box.innerHTML = '<p class="hint" style="margin:0">This category has no sizes.</p>'; renderSizeCount(); return; }
+  const picked = new Set(form.sizes.map(s => s.id));
+  const openIds = new Set([...box.querySelectorAll('details[open]')].map(d => d.dataset.g));
+  box.innerHTML = sizeGroups.map((g, gi) => {
+    const n = g.options.filter(o => picked.has(o.id)).length;
+    const open = openIds.size ? openIds.has(g.id) : (sizeGroups.length <= 2 || gi === 0 || n);
+    return `<details class="sgroup" data-g="${esc(g.id)}" ${open ? 'open' : ''}>
+      <summary>${esc(g.title)}${n ? `<span class="n">${n}</span>` : ''}</summary>
+      <div class="sizes">${g.options.map(o => `<button type="button" class="chip ${picked.has(o.id) ? 'on' : ''}" data-id="${esc(o.id)}" data-t="${esc(o.title)}">${esc(o.title)}</button>`).join('')}</div>
+    </details>`;
+  }).join('');
+  box.querySelectorAll('.sizes .chip').forEach(c => c.onclick = () => {
+    const i = form.sizes.findIndex(s => s.id === c.dataset.id);
+    if (i >= 0) form.sizes.splice(i, 1); else form.sizes.push({ id: c.dataset.id, title: c.dataset.t });
+    renderSizes();
+  });
+  renderSizeCount();
+}
+
+let conditions = [];
+function renderConds() {
+  const picked = new Set(form.conditions.map(c => c.id));
+  $('#condBox').innerHTML = conditions.map(c => `<button type="button" class="chip ${picked.has(c.id) ? 'on' : ''}" data-id="${c.id}">${esc(c.title)}</button>`).join('');
+  $('#condBox').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const i = form.conditions.findIndex(c => c.id === b.dataset.id);
+    if (i >= 0) form.conditions.splice(i, 1); else form.conditions.push(conditions.find(c => c.id === b.dataset.id));
+    renderConds();
+  });
+}
+
+let colors = [];
+function renderColors() {
+  const picked = new Set(form.colors.map(c => c.id));
+  $('#colorBox').innerHTML = colors.map(c => `<button type="button" class="chip ${picked.has(c.id) ? 'on' : ''}" data-id="${c.id}"><span class="sw" style="background:${c.swatch}"></span>${esc(c.title)}</button>`).join('');
+  $('#colorBox').querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    const i = form.colors.findIndex(c => c.id === b.dataset.id);
+    if (i >= 0) form.colors.splice(i, 1);
+    else { const c = colors.find(c => c.id === b.dataset.id); form.colors.push({ id: c.id, title: c.title }); }
+    renderColors();
+  });
+}
+
+// brand typeahead
+let brandTimer, brandResults = [], brandHl = 0;
+function showBrands() {
+  const list = $('#brandList');
+  list.classList.remove('hidden');
+  list.innerHTML = brandResults.length
+    ? brandResults.map((b, i) => `<button type="button" class="${i === brandHl ? 'hl' : ''}" data-i="${i}">${esc(b.title)}</button>`).join('')
+    : '<div class="none">No brand found</div>';
+  list.querySelectorAll('button').forEach(x => x.onmousedown = e => { e.preventDefault(); addBrand(brandResults[+x.dataset.i]); });
+}
+function addBrand(b) {
+  if (b && !form.brands.some(x => x.id === b.id)) form.brands.push(b);
+  $('#brandInput').value = ''; $('#brandList').classList.add('hidden'); renderPicks();
+}
+$('#brandInput').oninput = e => {
+  clearTimeout(brandTimer);
+  const q = e.target.value.trim();
+  if (q.length < 2) { $('#brandList').classList.add('hidden'); return; }
+  brandTimer = setTimeout(async () => {
+    try { brandResults = await api('/api/lookup/brands?q=' + encodeURIComponent(q)); brandHl = 0; showBrands(); }
+    catch (x) { brandResults = []; $('#brandList').innerHTML = `<div class="none">${esc(x.message)}</div>`; $('#brandList').classList.remove('hidden'); }
+  }, 250);
+};
+$('#brandInput').onkeydown = e => {
+  if ($('#brandList').classList.contains('hidden') || !brandResults.length) return;
+  if (e.key === 'ArrowDown') { brandHl = Math.min(brandHl + 1, brandResults.length - 1); showBrands(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { brandHl = Math.max(brandHl - 1, 0); showBrands(); e.preventDefault(); }
+  else if (e.key === 'Enter') { addBrand(brandResults[brandHl]); e.preventDefault(); }
+  else if (e.key === 'Escape') $('#brandList').classList.add('hidden');
+};
+$('#brandInput').onblur = () => setTimeout(() => $('#brandList').classList.add('hidden'), 150);
+
+$('#toggleUrl').onclick = e => {
+  e.preventDefault();
+  const box = $('#urlBox'); box.classList.toggle('hidden');
+  $('#toggleUrl').textContent = box.classList.contains('hidden') ? 'Paste a link instead' : 'Use the filters instead';
+  if (box.classList.contains('hidden')) $('#fUrl').value = '';
+};
+
+function resetForm() {
+  Object.assign(form, { brands: [], catPath: [], sizes: [], conditions: [], colors: [], editing: null });
+  ['#fName', '#fText', '#pFrom', '#pTo', '#fUrl', '#brandInput'].forEach(s => $(s).value = '');
+  $('#urlBox').classList.add('hidden'); $('#toggleUrl').textContent = 'Paste a link instead';
+  $('#formTitle').textContent = 'New search'; $('#addBtn').textContent = 'Watch';
+  $('#cancelEdit').classList.add('hidden'); $('#addErr').classList.add('hidden');
+  renderPicks(); renderCats(); renderConds(); renderColors(); loadSizes();
+}
+$('#cancelEdit').onclick = resetForm;
+
+function startEdit(s) {
+  resetForm();
+  form.editing = s.id;
+  const f = s.filters;
+  $('#fName').value = s.name;
+  if (f) {
+    form.brands = [...f.brands]; form.sizes = [...f.sizes]; form.conditions = [...f.conditions]; form.colors = [...(f.colors || [])];
+    form.catPath = f.category ? (findCatPath(f.category.id) || []) : [];
+    $('#fText').value = f.text || ''; $('#pFrom').value = f.price_from || ''; $('#pTo').value = f.price_to || '';
+  } else {
+    $('#urlBox').classList.remove('hidden'); $('#toggleUrl').textContent = 'Use the filters instead'; $('#fUrl').value = s.url;
+  }
+  $('#formTitle').textContent = 'Edit search'; $('#addBtn').textContent = 'Save';
+  $('#cancelEdit').classList.remove('hidden');
+  renderPicks(); renderCats(); renderConds(); renderColors(); loadSizes();
+  $('#formTitle').scrollIntoView({ behavior: 'smooth' });
+}
+
+$('#addForm').onsubmit = async e => {
+  e.preventDefault();
+  const btn = $('#addBtn'), err = $('#addErr');
+  btn.disabled = true; err.classList.add('hidden');
+  const node = catNode(form.catPath);
+  const pathTitles = form.catPath.map((_, i) => catNode(form.catPath.slice(0, i + 1))?.title).filter(Boolean);
+  const body = { name: $('#fName').value };
+  if ($('#fUrl').value.trim()) body.url = $('#fUrl').value;
+  else body.filters = {
+    text: $('#fText').value, brands: form.brands, sizes: form.sizes, conditions: form.conditions, colors: form.colors,
+    price_from: $('#pFrom').value, price_to: $('#pTo').value,
+    category: node ? { id: node.id, title: node.title, path: pathTitles.join(' › ') } : null,
+  };
+  try {
+    const editing = form.editing;
+    await api(editing ? `/api/searches/${editing}/update` : '/api/searches', body);
+    toast(editing ? 'Saved. Re-learning current listings.' : 'Watching. The first check is running.');
+    resetForm(); refresh();
+  } catch (x) { err.textContent = x.message; err.classList.remove('hidden'); }
+  btn.disabled = false;
+};
+
+(async () => {
+  try { conditions = await api('/api/lookup/conditions'); renderConds(); } catch (e) {}
+  try { colors = await api('/api/lookup/colors'); renderColors(); } catch (e) {}
+  try { catTree = await api('/api/lookup/categories'); renderCats(); }
+  catch (e) { $('#catSelects').innerHTML = `<span class="err">Couldn't load categories: ${esc(e.message)}</span>`; }
+})();
+
+// browser notifications while the dashboard is open
+function updateNotifyBtn() {
+  const b = $('#notifyBtn');
+  if (!('Notification' in window) || Notification.permission === 'granted') b.classList.add('hidden');
+  else if (Notification.permission === 'denied') b.textContent = 'Browser alerts blocked';
+}
+$('#notifyBtn').onclick = async () => { await Notification.requestPermission(); updateNotifyBtn(); };
+updateNotifyBtn();
+
+function announceNew() {
+  const ids = new Set(state.feed.map(f => f.id));
+  if (knownIds) {
+    const fresh = state.feed.filter(f => !knownIds.has(f.id));
+    if (fresh.length) {
+      document.title = `(${fresh.length}) VintedFind`;
+      if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        fresh.slice(0, 3).forEach(f => {
+          const n = new Notification(`${cur(f.currency)}${f.price} · ${f.search_name}`, { body: [f.title, f.details].filter(Boolean).join(' · '), icon: f.photo, tag: String(f.id) });
+          n.onclick = () => { window.open(f.url, '_blank'); n.close(); };
+        });
+      }
+    }
+  }
+  knownIds = ids;
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) document.title = 'VintedFind'; });
+
+async function refresh() {
+  try {
+    state = await api('/api/state');
+    $('#liveDot').classList.add('live');
+    announceNew(); renderFeed(); renderSearches(); renderSettings();
+  } catch (e) { $('#liveDot').classList.remove('live'); }
+}
+refresh();
+setInterval(refresh, 4000);
+</script>
+</body>
+</html>
